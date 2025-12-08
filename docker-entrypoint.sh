@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+export HOME=/tmp
 
 # Load secrets from file if using Docker Secrets (optional support)
 # file_env() { ... }
