@@ -12,13 +12,12 @@ export default function Sidebar() {
         <aside className="sidebar-dock hidden md:flex flex-col">
             {/* Logo Header */}
             <div className="p-5 flex items-center gap-3 border-b border-white/5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                    <Sparkles size={18} className="text-black" />
+                <div className="w-9 h-9 flex items-center justify-center">
+                    <img src="/tork-logo.png" alt="Tork Logo" className="w-full h-full object-contain" />
                 </div>
-                <div className="flex flex-col">
-                    <span className="font-bold text-lg tracking-wide text-white">TORK</span>
-                    <span className="text-[10px] text-cyan-400 font-medium tracking-widest uppercase -mt-1">CRM PRO</span>
-                </div>
+                <span className="font-bold text-xl tracking-wide text-white">
+                    TORK <span className="text-cyan-400">CRM</span>
+                </span>
             </div>
 
             {/* Navigation */}
@@ -71,8 +70,8 @@ function NavItem({ icon, label, href }: { icon: React.ReactNode, label: string, 
             className={`nav-item group ${active ? 'nav-item-active' : ''}`}
         >
             <span className={`nav-icon transition-all duration-200 ${active
-                    ? 'text-cyan-400'
-                    : 'text-gray-500 group-hover:text-cyan-400'
+                ? 'text-cyan-400'
+                : 'text-gray-500 group-hover:text-cyan-400'
                 }`}>
                 {icon}
             </span>
