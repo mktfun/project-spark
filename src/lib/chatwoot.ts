@@ -13,9 +13,12 @@ const api = axios.create({
 });
 
 export const createChatwootContact = async (name: string, email?: string, phone?: string) => {
+    console.log(`[CHATWOOT SYNC] Starting sync for: ${name}, ${phone}, ${email}`);
+    console.log(`[CHATWOOT CONFIG] URL: ${CHATWOOT_API_URL}, Account: ${CHATWOOT_ACCOUNT_ID}, Token Present: ${!!CHATWOOT_ACCESS_TOKEN}`);
+
     try {
         if (!CHATWOOT_ACCESS_TOKEN) {
-            console.warn('CHATWOOT_ACCESS_TOKEN not set. Skipping contact creation.');
+            console.error('[CHATWOOT SYNC] Token missing. Aborting.');
             return null;
         }
 
@@ -23,33 +26,50 @@ export const createChatwootContact = async (name: string, email?: string, phone?
         if (email) payload.email = email;
         if (phone) payload.phone_number = phone;
 
-        // Tenta buscar primeiro para evitar duplicatas (ou o Chatwoot já trata isso retornando o existente)
-        // O Chatwoot retorna erro se duplicado ou retorna o existente? 
-        // Normalmente o endpoint search/contacts resolve, mas vamos tentar criar direto e tratar erro 422 se necessário
-        // Porém, a doc diz que criar duplicado retorna erro ou o contato.
-        // Vamos fazer search primeiro por segurança.
-
+        // Search Contact First
         let existingId = null;
-        if (email) {
-            const search = await api.get(`/contacts/search?q=${email}`);
-            if (search.data.payload.length > 0) existingId = search.data.payload[0].id;
-        } else if (phone) {
-            const search = await api.get(`/contacts/search?q=${phone}`);
-            if (search.data.payload.length > 0) existingId = search.data.payload[0].id;
+        try {
+            const query = phone || email; // Prefer phone for search?
+            if (query) {
+                console.log(`[CHATWOOT SYNC] Searching for existing contact: ${query}`);
+                const searchRes = await api.get(`/contacts/search`, { params: { q: query } });
+                console.log(`[CHATWOOT SYNC] Search Result Count: ${searchRes.data.payload.length}`);
+
+                if (searchRes.data.payload.length > 0) {
+                    existingId = searchRes.data.payload[0].id;
+                }
+            }
+        } catch (searchErr: any) {
+            console.warn('[CHATWOOT SYNC] Search failed (ignoring):', searchErr.message);
         }
 
         if (existingId) {
-            console.log(`Contact already exists in Chatwoot (ID: ${existingId}). Updating...`);
-            const update = await api.put(`/contacts/${existingId}`, payload);
-            return update.data.payload;
+            console.log(`[CHATWOOT SYNC] Updating existing contact ID: ${existingId}`);
+            try {
+                const update = await api.put(`/contacts/${existingId}`, payload);
+                console.log(`[CHATWOOT SYNC] Update Success.`);
+                return update.data.payload;
+            } catch (updErr: any) {
+                console.error('[CHATWOOT SYNC] Update failed:', updErr.response?.data || updErr.message);
+            }
         }
 
-        const response = await api.post('/contacts', payload);
-        return response.data.payload;
+        console.log(`[CHATWOOT SYNC] Creating OLD-SCHOOL new contact...`);
+        try {
+            const response = await api.post('/contacts', payload);
+            console.log(`[CHATWOOT SYNC] Creation Success: ID ${response.data.payload.id}`);
+            return response.data.payload;
+        } catch (createErr: any) {
+            // 422 usually means duplicate that search missed?
+            console.error('[CHATWOOT SYNC] Creation Failed:', createErr.response?.data || createErr.message);
+            // Dump full error for deep debug
+            if (createErr.response) console.error('[CHATWOOT SYNC] Full Response:', JSON.stringify(createErr.response.data, null, 2));
+            throw createErr;
+        }
 
     } catch (error: any) {
-        console.error('Error syncing contact to Chatwoot:', error.response?.data || error.message);
-        return null; // Silently fail so we don't block CRM logic
+        console.error('[CHATWOOT SYNC] FATAL ERROR:', error.response?.data || error.message);
+        return null;
     }
 };
 
