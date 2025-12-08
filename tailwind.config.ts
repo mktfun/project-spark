@@ -10,28 +10,23 @@ const config: Config = {
         extend: {
             colors: {
                 primary: {
-                    50: '#e6f9ff',
-                    500: '#00f5ff',  // Cyan neon
-                    900: '#003d42'
+                    50: '#e0fbff',
+                    100: '#b3f4ff',
+                    400: '#33f0ff',
+                    500: '#00f5ff', // TORK NEON BASE
+                    600: '#00ccda',
+                    900: '#003d42',
                 },
-                success: '#00ff88',
-                error: '#ff3366',
-                warning: '#ffaa00',
-                background: '#0a0e27'
-            },
-            backdropBlur: {
-                xs: '2px'
-            },
-            animation: {
-                'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                'glow': 'glow 2s ease-in-out infinite alternate',
-            },
-            keyframes: {
-                glow: {
-                    '0%': { boxShadow: '0 0 5px #00f5ff, 0 0 10px #00f5ff' },
-                    '100%': { boxShadow: '0 0 10px #00f5ff, 0 0 20px #00f5ff, 0 0 30px #00f5ff' }
+                dark: {
+                    900: '#020410', // Deepest Black
+                    800: '#0a0e27', // Deep Navy
+                    700: '#131730', // Panel BG
                 }
-            }
+            },
+            backgroundImage: {
+                'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                'cyber-grid': 'linear-gradient(rgba(0, 245, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 245, 255, 0.03) 1px, transparent 1px)',
+            },
         },
     },
     plugins: [],
