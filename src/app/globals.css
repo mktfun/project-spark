@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Background */
+  --bg-primary: #0a0e27;
+  --bg-secondary: #0f1535;
+  --bg-tertiary: #141b3d;
+
+  /* Glassmorphism cards */
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: 10px;
+
+  /* Accent colors */
+  --accent-primary: #00f5ff;
+  /* Cyan neon */
+  --accent-secondary: #667eea;
+  /* Purple */
+
+  /* Status colors */
+  --success: #00ff88;
+  --error: #ff3366;
+  --warning: #ffaa00;
+  --info: #00b4d8;
+
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-tertiary: rgba(255, 255, 255, 0.5);
+}
+
+body {
+  color: var(--text-primary);
+  background: var(--bg-primary);
+}
+
+/* Card glassmorphism */
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+/* Custom Input & Button Utilities */
+.input-tork {
+  @apply w-full bg-[#0a0e27] border border-gray-700 rounded-lg py-2 px-3 text-white focus:border-cyan-500 outline-none transition-colors text-sm;
+}
+
+.btn-primary {
+  @apply py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold flex items-center justify-center gap-2 transition-colors;
+}

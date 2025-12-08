@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String @id @default(uuid())
+  email    String @unique
+  password String
+  name     String
+  
+  // NOVO: Hierarquia
+  role     String @default("BROKER") // "ADMIN", "MANAGER", "BROKER"
+  
+  createdAt DateTime @default(now())
+}
+
+model Contact {
+  id        String   @id @default(uuid())
+  name      String
+  email     String?  // Pode não ter email
+  phone     String   @unique // Identificador chave (WhatsApp)
+  document  String?  // CPF/CNPJ
+  type      String   // "PF" | "PJ"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  deals     Deal[]
+}
+
+model Deal {
+  id          String    @id @default(uuid())
+  title       String    // Ex: "Renovação Auto - Ford Ka"
+  value       Decimal?
+  stage       String    // "NOVO", "COTACAO", "FECHAMENTO", "GANHO", "PERDIDO"
+  priority    String    @default("MEDIUM") 
+  
+  contactId   String
+  contact     Contact   @relation(fields: [contactId], references: [id])
+  
+  // DADOS FLEXÍVEIS (InsurTech Magic)
+  insuranceType String  // "AUTO", "VIDA", "SAUDE", "EMPRESARIAL"
+  insuranceData Json?
+  
+  // Datas Críticas
+  startDate    DateTime? // Início Vigência
+  endDate      DateTime? // Fim Vigência
+  renewalDate  DateTime? // Data Prevista para Renovação
+  
+  status       String    @default("ACTIVE") // "ACTIVE", "ARCHIVED"
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model PipelineStage {
+  id          String   @id // "NOVO", "COTACAO" (constants) or UUID (custom)
+  name        String
+  order       Int
+  color       String   @default("blue") // blue, yellow, purple, green, red
+  type        String   @default("OPEN") // OPEN, WON, LOST (for automations)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

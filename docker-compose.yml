@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  # Banco de Dados Dedicado do Tork CRM
+  tork_db:
+    image: postgres:15-alpine
+    container_name: tork_crm_db
+    environment:
+      POSTGRES_USER: tork_user
+      POSTGRES_PASSWORD: tork_password_secure
+      POSTGRES_DB: tork_crm
+    volumes:
+      - tork_pg_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432" # Porta 5433 para não conflitar com o Chatwoot (5432)
+    networks:
+      - app_network # Conecta na mesma rede do n8n para comunicação interna rápida
+    restart: always
+
+volumes:
+  tork_pg_data:
+
+
+networks:
+  app_network:
+    external: true
