@@ -19,6 +19,7 @@ services:
     networks:
       - tork_network
       - app_network
+      - bot_default
 
   tork_crm_db:
     container_name: tork_crm_db
@@ -45,6 +46,8 @@ networks:
   tork_network:
     driver: bridge
   app_network:
+    external: true
+  bot_default:
     external: true
 
 volumes:
