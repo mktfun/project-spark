@@ -26,20 +26,30 @@ WORKDIR /app
 ENV NODE_ENV production
 
 # Instala OpenSSL para Prisma
+# Instala OpenSSL para Prisma
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Cria usuário não-root por segurança
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Copia script de entrypoint
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Copia apenas o necessário do build
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copia o diretório prisma para rodar migrations e seed e schema
+COPY --from=builder /app/prisma ./prisma
+
 USER nextjs
 
 EXPOSE 3000
 ENV PORT 3000
-# O Next.js standalone roda como um server node simples
-CMD ["node", "server.js"]
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+# CMD is optional if ENTRYPOINT script ends with exec "$@" or hardcodes startup but our script hardcodes startup
+# CMD ["node", "server.js"]

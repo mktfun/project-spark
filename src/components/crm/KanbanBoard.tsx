@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import axios from 'axios';
@@ -79,6 +79,16 @@ export default function KanbanBoard({ initialDeals, initialStages = [] }: { init
     const [isUpdating, setIsUpdating] = useState(false);
     const router = useRouter(); // Import needed
 
+    const [enabled, setEnabled] = useState(false);
+
+    useEffect(() => {
+        const animation = requestAnimationFrame(() => setEnabled(true));
+        return () => {
+            cancelAnimationFrame(animation);
+            setEnabled(false);
+        };
+    }, []);
+
     const onDragEnd = async (result: DropResult) => {
         const { destination, source, draggableId } = result;
 
@@ -89,21 +99,29 @@ export default function KanbanBoard({ initialDeals, initialStages = [] }: { init
         ) return;
 
         const newStage = destination.droppableId;
+        const previousStage = source.droppableId;
 
         // Optimistic Update
         const updatedDeals = deals.map((d) =>
             d.id === draggableId ? { ...d, stage: newStage } : d
         );
+        const previousDeals = [...deals];
         setDeals(updatedDeals);
 
         try {
             await axios.patch(`/api/deals/${draggableId}`, { stage: newStage });
-            router.refresh(); // Sync Server Components
+            router.refresh();
         } catch (error) {
             console.error("Erro ao salvar movimento:", error);
-            // Revert on error could be implemented here
+            // Revert on error
+            setDeals(previousDeals);
+            alert("Erro ao mover o card. A alteração foi revertida.");
         }
     };
+
+    if (!enabled) {
+        return null;
+    }
 
     return (
         <div className="flex flex-col h-full font-sans">
