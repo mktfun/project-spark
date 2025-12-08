@@ -13,6 +13,7 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-tork_user}:${POSTGRES_PASSWORD:-tork_pass}@tork_crm_db:5432/${POSTGRES_DB:-tork_crm}?schema=public
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:4000}
       - CHATWOOT_API_URL=http://bot-chatwoot-rails-1:3000
+      - CHATWOOT_ACCESS_TOKEN=${CHATWOOT_ACCESS_TOKEN}
     depends_on:
       tork_crm_db:
         condition: service_healthy
