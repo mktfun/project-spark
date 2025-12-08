@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { DragDropContext, Draggable, DropResult } from '@hello-pangea/dnd';
+import { StrictModeDroppable } from '@/components/lib/StrictModeDroppable';
 import axios from 'axios';
 import {
     MoreHorizontal, DollarSign, Plus,
     Car, Heart, Building, Wallet, Layers,
-    CheckCircle2, XCircle, Briefcase, Clock, User
+    Briefcase, Clock, User
 } from 'lucide-react';
 
 // Types
@@ -31,6 +32,12 @@ type Stage = {
     order: number;
     type: string;
 };
+
+interface KanbanBoardProps {
+    initialDeals: Deal[];
+    initialStages?: Stage[];
+    onAddDeal?: (stageId: string) => void;
+}
 
 const getStageColor = (color: string) => {
     const colors: any = {
@@ -60,12 +67,16 @@ const PIPELINES = [
     { id: 'CONSORCIO', label: 'Consórcio', icon: Wallet },
 ];
 
-export default function KanbanBoard({ initialDeals, initialStages = [] }: { initialDeals: Deal[], initialStages?: Stage[] }) {
+export default function KanbanBoard({ initialDeals, initialStages = [], onAddDeal }: KanbanBoardProps) {
     const [deals, setDeals] = useState<Deal[]>(initialDeals);
     const [stages, setStages] = useState<Stage[]>(initialStages || []);
     const [activePipeline, setActivePipeline] = useState('ALL');
-    const [enabled, setEnabled] = useState(false);
     const router = useRouter();
+
+    // Sync with server if initialDeals changes (e.g. after refresh)
+    useEffect(() => {
+        setDeals(initialDeals);
+    }, [initialDeals]);
 
     const filteredDeals = deals.filter(deal => {
         if (activePipeline === 'ALL') return true;
@@ -73,14 +84,6 @@ export default function KanbanBoard({ initialDeals, initialStages = [] }: { init
     });
 
     const getColumnDeals = (colId: string) => filteredDeals.filter((d) => d.stage === colId);
-
-    useEffect(() => {
-        const animation = requestAnimationFrame(() => setEnabled(true));
-        return () => {
-            cancelAnimationFrame(animation);
-            setEnabled(false);
-        };
-    }, []);
 
     const onDragEnd = async (result: DropResult) => {
         const { destination, source, draggableId } = result;
@@ -92,24 +95,16 @@ export default function KanbanBoard({ initialDeals, initialStages = [] }: { init
         const previousDeals = [...deals];
 
         // Optimistic Update
-        setDeals(deals.map((d) => d.id === draggableId ? { ...d, stage: newStage } : d));
+        setDeals(prev => prev.map((d) => d.id === draggableId ? { ...d, stage: newStage } : d));
 
         try {
             await axios.patch(`/api/deals/${draggableId}`, { stage: newStage });
             router.refresh();
         } catch (error) {
             console.error("Error saving move:", error);
-            setDeals(previousDeals);
+            setDeals(previousDeals); // Revert
         }
     };
-
-    if (!enabled) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-        );
-    }
 
     return (
         <div className="flex flex-col h-full">
@@ -153,20 +148,23 @@ export default function KanbanBoard({ initialDeals, initialStages = [] }: { init
                                                 {columnDeals.length}
                                             </span>
                                         </div>
-                                        <button className="text-gray-600 hover:text-cyan-400 transition-colors">
+                                        <button
+                                            onClick={() => onAddDeal?.(stage.id)}
+                                            className="text-gray-600 hover:text-cyan-400 transition-colors bg-transparent hover:bg-cyan-500/10 p-1 rounded"
+                                        >
                                             <Plus size={16} />
                                         </button>
                                     </div>
 
                                     {/* Droppable Column */}
-                                    <Droppable droppableId={stage.id}>
+                                    <StrictModeDroppable droppableId={stage.id}>
                                         {(provided, snapshot) => (
                                             <div
                                                 {...provided.droppableProps}
                                                 ref={provided.innerRef}
-                                                className={`flex-1 glass-panel p-3 overflow-y-auto transition-all duration-300 ${snapshot.isDraggingOver
+                                                className={`flex-1 glass-panel p-3 overflow-y-auto transition-colors duration-300 rounded-xl ${snapshot.isDraggingOver
                                                         ? 'bg-cyan-500/10 border-cyan-500/30'
-                                                        : ''
+                                                        : 'bg-[#151b33]/50 hover:bg-[#151b33]/80'
                                                     }`}
                                             >
                                                 {columnDeals.map((deal, index) => {
@@ -179,9 +177,10 @@ export default function KanbanBoard({ initialDeals, initialStages = [] }: { init
                                                                     ref={provided.innerRef}
                                                                     {...provided.draggableProps}
                                                                     {...provided.dragHandleProps}
-                                                                    className={`mb-3 p-4 rounded-xl border transition-all duration-300 group cursor-grab active:cursor-grabbing ${snapshot.isDragging
-                                                                            ? 'bg-cyan-900/80 border-cyan-400 shadow-[0_0_25px_rgba(0,245,255,0.4)] scale-105 rotate-1'
-                                                                            : 'bg-[#131730] border-white/5 hover:border-cyan-500/30 hover:shadow-lg hover:scale-[1.02]'
+                                                                    // REMOVED transform/scale from resting state to prevent DnD bugs
+                                                                    className={`mb-3 p-4 rounded-xl border transition-all duration-200 group cursor-grab active:cursor-grabbing ${snapshot.isDragging
+                                                                            ? 'bg-cyan-900/90 border-cyan-400 shadow-[0_0_30px_rgba(0,245,255,0.4)] z-50 ring-1 ring-cyan-400'
+                                                                            : 'bg-[#131730] border-white/5 hover:border-cyan-500/30 hover:shadow-lg'
                                                                         }`}
                                                                     style={provided.draggableProps.style}
                                                                 >
@@ -252,7 +251,7 @@ export default function KanbanBoard({ initialDeals, initialStages = [] }: { init
                                                 )}
                                             </div>
                                         )}
-                                    </Droppable>
+                                    </StrictModeDroppable>
                                 </div>
                             );
                         })}

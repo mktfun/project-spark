@@ -1,6 +1,6 @@
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { PrismaClient } from '@prisma/client';
-import KanbanBoard from '@/components/crm/KanbanBoard';
+import DealsContainer from '@/components/crm/DealsContainer';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,20 +41,7 @@ export default async function DealsPage() {
 
     return (
         <ProtectedRoute>
-            <div className="p-4 md:p-6 h-[calc(100vh-2rem)] flex flex-col space-y-6">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-white tracking-wide">Pipeline de Vendas</h1>
-                        <p className="text-gray-500 mt-1 text-sm">Gerencie seus negócios e oportunidades</p>
-                    </div>
-                </div>
-
-                {/* Kanban Container */}
-                <div className="flex-1 overflow-hidden">
-                    <KanbanBoard initialDeals={deals} initialStages={stages} />
-                </div>
-            </div>
+            <DealsContainer deals={deals} stages={stages} />
         </ProtectedRoute>
     );
 }
