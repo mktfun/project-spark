@@ -118,8 +118,8 @@ export default function KanbanBoard({ initialDeals, initialStages = [], onAddDea
                             key={p.id}
                             onClick={() => setActivePipeline(p.id)}
                             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${isActive
-                                    ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shadow-lg shadow-cyan-500/10'
-                                    : 'text-gray-500 hover:text-gray-300 hover:bg-white/5 border border-transparent'
+                                ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shadow-lg shadow-cyan-500/10'
+                                : 'text-gray-500 hover:text-gray-300 hover:bg-white/5 border border-transparent'
                                 }`}
                         >
                             <Icon size={16} />
@@ -162,9 +162,9 @@ export default function KanbanBoard({ initialDeals, initialStages = [], onAddDea
                                             <div
                                                 {...provided.droppableProps}
                                                 ref={provided.innerRef}
-                                                className={`flex-1 glass-panel p-3 overflow-y-auto transition-colors duration-300 rounded-xl ${snapshot.isDraggingOver
-                                                        ? 'bg-cyan-500/10 border-cyan-500/30'
-                                                        : 'bg-transparent' // Transparent background per instructions
+                                                className={`flex-1 p-3 overflow-y-auto transition-colors duration-300 rounded-xl border border-white/5 shadow-sm ${snapshot.isDraggingOver
+                                                    ? 'bg-cyan-500/10 border-cyan-500/30'
+                                                    : 'bg-gradient-to-br from-white/5 to-transparent'
                                                     }`}
                                             >
                                                 {columnDeals.map((deal, index) => {
@@ -179,8 +179,8 @@ export default function KanbanBoard({ initialDeals, initialStages = [], onAddDea
                                                                     {...provided.dragHandleProps}
                                                                     onClick={() => onDealClick?.(deal)}
                                                                     className={`mb-3 p-4 rounded-xl border transition-all duration-300 group cursor-grab active:cursor-grabbing ${snapshot.isDragging
-                                                                            ? 'bg-cyan-900/90 border-cyan-400 shadow-[0_0_30px_rgba(0,245,255,0.4)] z-50 scale-105'
-                                                                            : 'bg-[#131730] border-white/5 hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/10'
+                                                                        ? 'bg-cyan-900/90 border-cyan-400 shadow-[0_0_30px_rgba(0,245,255,0.4)] z-50 scale-105'
+                                                                        : 'bg-[#131730] border-white/5 hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/10'
                                                                         }`}
                                                                     style={provided.draggableProps.style}
                                                                 >
@@ -207,8 +207,8 @@ export default function KanbanBoard({ initialDeals, initialStages = [], onAddDea
                                                                     {/* Renewal Alert */}
                                                                     {deal.renewalDate && (
                                                                         <div className={`mb-3 px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase flex items-center gap-1.5 w-fit ${new Date(deal.renewalDate) < new Date()
-                                                                                ? 'bg-red-500/15 text-red-400 border border-red-500/20'
-                                                                                : 'bg-orange-500/10 text-orange-400 border border-orange-500/15'
+                                                                            ? 'bg-red-500/15 text-red-400 border border-red-500/20'
+                                                                            : 'bg-orange-500/10 text-orange-400 border border-orange-500/15'
                                                                             }`}>
                                                                             <Clock size={10} />
                                                                             {new Date(deal.renewalDate).toLocaleDateString('pt-BR')}
