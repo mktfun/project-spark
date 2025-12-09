@@ -1,18 +1,52 @@
 "use client";
 
-import React, { useState } from 'react';
-import { X, Save, User, Phone, Car, Heart, Home, Calendar, AlertCircle, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Save, User, Phone, Car, Heart, Home, Calendar, AlertCircle, Loader2, Plus } from 'lucide-react';
 import axios from 'axios';
+
+interface Lead {
+    id: string;
+    name: string;
+    phone: string;
+    email?: string;
+}
 
 export default function NewDealModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
     const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState(1);
+    const [leads, setLeads] = useState<Lead[]>([]);
+    const [fetchingLeads, setFetchingLeads] = useState(true);
+    const [isNewClientMode, setIsNewClientMode] = useState(false);
+
+    // Initial Form State
     const [formData, setFormData] = useState({
-        nome: '', telefone: '', email: '',
-        tipo: 'AUTO', valor: '', renovacao: '',
-        // Campos dinâmicos (JSON)
+        // Client Data
+        leadId: '',
+        newClientName: '',
+        newClientPhone: '',
+        newClientEmail: '',
+
+        // Deal Data
+        title: '',
+        tipo: 'AUTO',
+        valor: '',
+        renovacao: '',
         dadosExtras: {} as any
     });
+
+    // Fetch Leads on Mount
+    useEffect(() => {
+        const fetchLeads = async () => {
+            try {
+                const res = await axios.get('/api/leads');
+                setLeads(res.data);
+            } catch (err) {
+                console.error("Error fetching leads:", err);
+            } finally {
+                setFetchingLeads(false);
+            }
+        };
+        fetchLeads();
+    }, []);
 
     const handleExtraChange = (key: string, value: string) => {
         setFormData(prev => ({
@@ -21,7 +55,26 @@ export default function NewDealModal({ onClose, onSuccess }: { onClose: () => vo
         }));
     };
 
-    // Renderiza campos baseados no tipo de seguro
+    // Auto-generate title based on data
+    useEffect(() => {
+        let clientName = '';
+        if (isNewClientMode) {
+            clientName = formData.newClientName;
+        } else {
+            const l = leads.find(l => l.id === formData.leadId);
+            clientName = l ? l.name : '';
+        }
+
+        const typeLabel = formData.tipo === 'AUTO' ? 'Seguro Auto' :
+            formData.tipo === 'SAUDE' ? 'Plano de Saúde' :
+                formData.tipo === 'CONSORCIO' ? 'Consórcio' : formData.tipo;
+
+        if (clientName) {
+            setFormData(prev => ({ ...prev, title: `${typeLabel} - ${clientName}` }));
+        }
+    }, [formData.leadId, formData.newClientName, formData.tipo, leads, isNewClientMode]);
+
+
     const renderDynamicFields = () => {
         switch (formData.tipo) {
             case 'AUTO':
@@ -43,31 +96,58 @@ export default function NewDealModal({ onClose, onSuccess }: { onClose: () => vo
                             <option value="ADESAO">Adesão</option>
                         </select>
                         <input placeholder="Qtd. Vidas" type="number" className="input-tork" onChange={e => handleExtraChange('vidas', e.target.value)} />
-                        <input placeholder="Faixa Etária (Ex: 30-45)" className="input-tork col-span-2" onChange={e => handleExtraChange('idades', e.target.value)} />
+                        <input placeholder="Faixa Etária" className="input-tork col-span-2" onChange={e => handleExtraChange('idades', e.target.value)} />
                     </div>
                 );
-            default:
-                return <p className="text-xs text-gray-500 italic">Sem campos específicos para este produto.</p>;
+            default: return null;
         }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+
         try {
-            await axios.post('/api/leads', {
-                nome: formData.nome,
-                telefone: formData.telefone,
-                email: formData.email,
-                tipo_seguro: formData.tipo,
-                valor_estimado: formData.valor,
-                resumo: `Cadastro manual (${formData.tipo})`,
-                dados_extras: { ...formData.dadosExtras, renovacao: formData.renovacao } // Salva no JSON
+            let finalLeadId = formData.leadId;
+
+            // Scenario: Creating New Lead on the fly
+            if (isNewClientMode) {
+                if (!formData.newClientName || !formData.newClientPhone) {
+                    alert("Nome e Telefone são obrigatórios para novo cliente.");
+                    setLoading(false);
+                    return;
+                }
+
+                // Create Lead
+                const leadRes = await axios.post('/api/leads', {
+                    nome: formData.newClientName,
+                    telefone: formData.newClientPhone,
+                    email: formData.newClientEmail,
+                    status: 'New'
+                });
+                finalLeadId = leadRes.data.id;
+            } else {
+                if (!finalLeadId) {
+                    alert("Selecione um cliente.");
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            // Create Deal
+            await axios.post('/api/deals', {
+                title: formData.title,
+                value: formData.valor ? parseFloat(formData.valor) : 0,
+                contactId: finalLeadId,
+                insuranceType: formData.tipo,
+                insuranceData: { ...formData.dadosExtras, renovacao: formData.renovacao },
+                stageId: 'NEW' // Should match your initial stage ID
             });
+
             onSuccess();
-            onClose();
         } catch (error) {
-            alert('Erro ao salvar. Verifique os dados.');
+            console.error(error);
+            alert('Erro ao salvar. Verifique o console.');
         } finally {
             setLoading(false);
         }
@@ -88,31 +168,86 @@ export default function NewDealModal({ onClose, onSuccess }: { onClose: () => vo
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
 
-                    {/* Seção 1: Cliente */}
+                    {/* Section 1: Client Selection (Smart) */}
                     <div className="space-y-3">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Dados do Cliente</label>
-                        <div className="grid grid-cols-1 gap-3">
-                            <input required placeholder="Nome Completo" className="input-tork" value={formData.nome} onChange={e => setFormData({ ...formData, nome: e.target.value })} />
-                            <div className="grid grid-cols-2 gap-3">
-                                <input required placeholder="WhatsApp (55...)" className="input-tork" value={formData.telefone} onChange={e => setFormData({ ...formData, telefone: e.target.value })} />
-                                <input placeholder="E-mail (Opcional)" className="input-tork" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
-                            </div>
+                        <div className="flex justify-between items-end">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Cliente</label>
+                            {isNewClientMode && (
+                                <button type="button" onClick={() => setIsNewClientMode(false)} className="text-[10px] text-cyan-400 hover:underline">
+                                    Voltar para Seleção
+                                </button>
+                            )}
                         </div>
+
+                        {!isNewClientMode ? (
+                            <div className="flex gap-2">
+                                <select
+                                    className="input-tork flex-1"
+                                    value={formData.leadId}
+                                    onChange={e => setFormData({ ...formData, leadId: e.target.value })}
+                                    disabled={fetchingLeads}
+                                >
+                                    <option value="">{fetchingLeads ? "Carregando..." : "Selecione um Cliente..."}</option>
+                                    {leads.map(lead => (
+                                        <option key={lead.id} value={lead.id}>{lead.name} ({lead.phone})</option>
+                                    ))}
+                                </select>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsNewClientMode(true)}
+                                    className="w-12 h-10 flex items-center justify-center rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 hover:bg-cyan-500 hover:text-black transition-all"
+                                    title="Novo Cliente Rápido"
+                                >
+                                    <Plus size={20} />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="space-y-3 animate-in fade-in slide-in-from-right-4">
+                                <input
+                                    autoFocus
+                                    placeholder="Nome do Novo Cliente"
+                                    className="input-tork border-cyan-500/50"
+                                    value={formData.newClientName}
+                                    onChange={e => setFormData({ ...formData, newClientName: e.target.value })}
+                                />
+                                <div className="grid grid-cols-2 gap-3">
+                                    <input
+                                        placeholder="WhatsApp (55...)"
+                                        className="input-tork"
+                                        value={formData.newClientPhone}
+                                        onChange={e => setFormData({ ...formData, newClientPhone: e.target.value })}
+                                    />
+                                    <input
+                                        placeholder="Email (Opcional)"
+                                        className="input-tork"
+                                        value={formData.newClientEmail}
+                                        onChange={e => setFormData({ ...formData, newClientEmail: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Seção 2: O Negócio */}
-                    <div className="space-y-3">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Detalhes da Apólice</label>
+                    {/* Section 2: Deal Details */}
+                    <div className="space-y-3 border-t border-gray-800 pt-4">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Detalhes do Negócio</label>
 
-                        <div className="flex gap-3 mb-3">
-                            {['AUTO', 'SAUDE', 'CONSORCIO'].map(type => (
+                        <input
+                            className="input-tork font-medium text-white"
+                            placeholder="Título do Negócio (Automático)"
+                            value={formData.title}
+                            onChange={e => setFormData({ ...formData, title: e.target.value })}
+                        />
+
+                        <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
+                            {['AUTO', 'SAUDE', 'CONSORCIO', 'VIDA', 'EMPRESARIAL'].map(type => (
                                 <button
                                     type="button"
                                     key={type}
                                     onClick={() => setFormData({ ...formData, tipo: type })}
-                                    className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all ${formData.tipo === type
-                                            ? 'bg-cyan-600 border-cyan-500 text-white shadow-lg shadow-cyan-900/50'
-                                            : 'bg-[#0a0e27] border-gray-700 text-gray-400 hover:border-gray-600'
+                                    className={`px-3 py-2 rounded-lg text-[10px] font-bold border whitespace-nowrap transition-all ${formData.tipo === type
+                                        ? 'bg-cyan-600 border-cyan-500 text-white'
+                                        : 'bg-[#0a0e27] border-gray-700 text-gray-400 hover:border-gray-600'
                                         }`}
                                 >
                                     {type}
@@ -120,26 +255,35 @@ export default function NewDealModal({ onClose, onSuccess }: { onClose: () => vo
                             ))}
                         </div>
 
-                        {/* Campos Dinâmicos */}
                         <div className="bg-[#0a0e27]/50 p-4 rounded-xl border border-gray-700/50 mb-3">
                             {renderDynamicFields()}
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="text-[10px] text-gray-400 mb-1 block">Valor Estimado (Prêmio)</label>
-                                <input type="number" placeholder="R$ 0,00" className="input-tork" onChange={e => setFormData({ ...formData, valor: e.target.value })} />
+                                <label className="text-[10px] text-gray-400 mb-1 block">Valor Estimado</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-2 text-gray-500 text-xs">R$</span>
+                                    <input
+                                        type="number"
+                                        placeholder="0,00"
+                                        className="input-tork pl-8"
+                                        onChange={e => setFormData({ ...formData, valor: e.target.value })}
+                                    />
+                                </div>
                             </div>
                             <div>
-                                <label className="text-[10px] text-orange-400 mb-1 block font-bold flex items-center gap-1"><AlertCircle size={10} /> Data Renovação</label>
-                                <input type="date" className="input-tork border-orange-500/30 focus:border-orange-500 text-orange-200" onChange={e => setFormData({ ...formData, renovacao: e.target.value })} />
+                                <label className="text-[10px] text-orange-400 mb-1 block font-bold flex items-center gap-1"><AlertCircle size={10} /> Renovação</label>
+                                <input type="date" className="input-tork border-orange-500/30 text-orange-200" onChange={e => setFormData({ ...formData, renovacao: e.target.value })} />
                             </div>
                         </div>
                     </div>
 
-                    <button type="submit" disabled={loading} className="btn-primary w-full">
-                        {loading ? <Loader2 className="animate-spin" /> : 'Criar Negócio'}
-                    </button>
+                    <div className="pt-2">
+                        <button type="submit" disabled={loading} className="btn-primary w-full shadow-lg shadow-cyan-500/20 py-3">
+                            {loading ? <Loader2 className="animate-spin" /> : (isNewClientMode ? 'Cadastrar Cliente & Criar Negócio' : 'Criar Negócio')}
+                        </button>
+                    </div>
 
                 </form>
             </div>
