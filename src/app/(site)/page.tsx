@@ -1,201 +1,318 @@
 "use client";
 
-import { useRef } from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, PlayCircle, Zap, Shield, Globe } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { motion, useScroll, useTransform, useInView } from "framer-motion";
+import {
+    Zap, Shield, Server, ArrowRight, PlayCircle, Globe, Lock, CheckCircle
+} from "lucide-react";
+
+// IMPORTS DOS SEUS COMPONENTES (Ajuste os caminhos se necessário)
 import { SmartNavbar } from "@/components/landing/SmartNavbar";
 import { MegaFooter } from "@/components/landing/MegaFooter";
-import { StickyScrollSection } from "@/components/landing/StickyScrollSection";
-import { InfrastructureScrollSection } from "@/components/landing/InfrastructureSection";
 import { SectionDivider } from "@/components/landing/SectionDivider";
-import { FadeInWhenVisible, HoverCard } from "@/components/landing/AnimationWrappers";
 import { HeroMockups } from "@/components/landing/HeroMockups";
+// Caso não tenha HeroMockups, use um placeholder ou imagem
 
-const CRM_URL = process.env.NEXT_PUBLIC_CRM_URL || 'https://crm.davicode.me';
-
-export default function LandingPage() {
+// --- UTILS: FADE IN COMPONENT ---
+function FadeInWhenVisible({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
     return (
-        <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-cyan-500/30">
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6, delay, ease: "easeOut" }}
+        >
+            {children}
+        </motion.div>
+    );
+}
+
+export default function Home() {
+    // LÓGICA DA SEÇÃO DE INFRAESTRUTURA (Scroll Spy)
+    const infraRef = useRef<HTMLDivElement>(null);
+    const [activeFeature, setActiveFeature] = useState(0);
+    const { scrollYProgress } = useScroll({
+        target: infraRef,
+        offset: ["start start", "end end"],
+    });
+
+    // Listener simples para trocar o activeFeature baseado no scroll da seção
+    useTransform(scrollYProgress, [0, 0.5, 1], [0, 1, 2]);
+
+    // Hook para detectar qual passo está ativo na infra (Fallback manual se transform n funcionar direto)
+    useEffect(() => {
+        const handleScroll = () => {
+            if (!infraRef.current) return;
+            const rect = infraRef.current.getBoundingClientRect();
+            const progress = Math.abs(rect.top) / rect.height;
+            if (progress < 0.33) setActiveFeature(0);
+            else if (progress < 0.66) setActiveFeature(1);
+            else setActiveFeature(2);
+        };
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
+
+    return (
+        <main className="flex flex-col min-h-screen w-full overflow-x-hidden bg-slate-950 selection:bg-cyan-500/30 selection:text-cyan-200">
+
+            {/* 1. HEADER (Unificado e Apple Glass) */}
             <SmartNavbar />
 
-            {/* --- HERO SECTION (RESTORED 3D) --- */}
-            <section className="relative min-h-[100vh] flex flex-col items-center justify-center pt-32 pb-20 lg:perspective-[2000px] overflow-hidden">
-                {/* Background Effects (Spotlight) */}
-                <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-full max-w-[100vw] h-[500px] bg-indigo-500/10 blur-[80px] md:blur-[120px] rounded-full pointer-events-none" />
-                <div className="absolute top-[-5%] left-1/2 -translate-x-1/2 w-full max-w-[80%] h-[300px] bg-cyan-500/5 blur-[100px] rounded-full pointer-events-none" />
+            {/* 2. HERO SECTION (Minimalist Premium) */}
+            <section className="relative min-h-screen flex flex-col items-center justify-center pt-32 pb-20 overflow-hidden bg-slate-950">
+                {/* Ambient Light */}
+                <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-full max-w-[800px] h-[400px] bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none" />
+                <div className="absolute top-[-5%] left-1/2 -translate-x-1/2 w-full max-w-[600px] h-[300px] bg-cyan-500/5 blur-[100px] rounded-full pointer-events-none" />
 
-                <div className="relative z-10 max-w-5xl mx-auto px-6 text-center flex flex-col items-center">
+                <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
                     <FadeInWhenVisible>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/5 mb-8">
-                            <span className="flex h-2 w-2 rounded-full bg-emerald-500"></span>
-                            <span className="text-sm font-medium text-slate-300">Tork v2.0</span>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/5 mb-8 backdrop-blur-sm">
+                            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span className="text-sm font-medium text-slate-300">Tork v2.0 Live</span>
                         </div>
                     </FadeInWhenVisible>
 
                     <FadeInWhenVisible delay={0.1}>
-                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6 text-white">
+                        <h1 className="text-4xl md:text-7xl font-semibold tracking-tight text-white mb-6 leading-[1.1]">
                             A espinha dorsal da <br />
                             sua operação de seguros.
                         </h1>
                     </FadeInWhenVisible>
 
                     <FadeInWhenVisible delay={0.2}>
-                        <p className="text-lg md:text-xl text-slate-400 max-w-xl mx-auto leading-relaxed mb-8 px-4 font-light">
-                            Conecte WhatsApp, CRM e automação em um único fluxo contínuo. Sem complexidade. Apenas resultados.
+                        <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed mb-10 font-light">
+                            Conecte WhatsApp, CRM e automação em um único fluxo contínuo.
+                            Sem complexidade. Apenas resultados.
                         </p>
                     </FadeInWhenVisible>
 
                     <FadeInWhenVisible delay={0.3}>
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-6">
-                            <a href={CRM_URL} className="w-full sm:w-auto px-8 py-3.5 bg-white text-slate-950 rounded-full font-semibold hover:bg-slate-200 transition-colors shadow-lg shadow-white/5">
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                            <a href="#" className="w-full sm:w-auto px-8 py-3.5 bg-white text-slate-950 rounded-full font-bold hover:bg-slate-200 transition-colors shadow-lg shadow-white/5">
                                 Começar Agora
                             </a>
-                            <button className="w-full sm:w-auto px-8 py-3.5 text-slate-300 hover:text-white transition-colors font-medium">
-                                Ver Como Funciona
+                            <button className="w-full sm:w-auto px-8 py-3.5 text-slate-300 hover:text-white transition-colors font-medium flex items-center justify-center gap-2">
+                                <PlayCircle size={20} /> Ver Demo
                             </button>
                         </div>
                     </FadeInWhenVisible>
                 </div>
 
-                {/* 3D DASHBOARD (Mobile: Flat | Desktop: 3D Tilt) */}
+                {/* Floating Mockup */}
                 <motion.div
-                    initial={{ opacity: 0, rotateX: 20, y: 100 }}
-                    animate={{ opacity: 1, rotateX: 0, y: 0 }}
-                    transition={{ duration: 1.2, ease: "easeOut", delay: 0.4 }}
-                    className="relative mt-20 max-w-6xl w-full px-4 lg:transform-gpu lg:rotate-x-12"
+                    initial={{ opacity: 0, y: 40 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
+                    className="relative mt-16 md:mt-24 max-w-6xl w-full px-4"
                 >
-                    <div className="relative rounded-2xl bg-[#0F1117] border border-white/10 shadow-[0_20px_50px_-12px_rgba(0,0,0,1)] overflow-hidden">
-                        {/* Header do Mockup (Simulação de Browser) */}
-                        <div className="h-10 border-b border-white/5 bg-white/[0.02] flex items-center px-4 gap-2">
-                            <div className="flex gap-1.5">
-                                <div className="w-3 h-3 rounded-full bg-white/10" />
-                                <div className="w-3 h-3 rounded-full bg-white/10" />
-                                <div className="w-3 h-3 rounded-full bg-white/10" />
-                            </div>
+                    <div className="relative rounded-2xl bg-[#0F1117] border border-white/10 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.7)] overflow-hidden">
+                        <div className="h-8 md:h-10 border-b border-white/5 bg-white/[0.02] flex items-center px-4 gap-2">
+                            <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
                         </div>
-
-                        {/* Imagem do Dashboard ou Componente */}
-                        <div className="relative">
-                            <HeroMockups />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 to-transparent pointer-events-none" />
+                        {/* Coloque sua imagem ou componente de mockup aqui */}
+                        <div className="aspect-[16/9] bg-slate-900/50 flex items-center justify-center text-slate-600">
+                            <HeroMockups /> {/* Se não tiver, use <img src="/dashboard.png" className="w-full"/> */}
                         </div>
                     </div>
-                    {/* Sombra de Chão (Grounding) */}
-                    <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[90%] h-20 bg-cyan-500/10 blur-[100px] -z-10" />
                 </motion.div>
             </section>
 
+            {/* 3. DIVIDER (Dark Glow) */}
             <SectionDivider variant="dark-glow" />
 
-            {/* --- STICKY SCROLL SECTION (Chat) --- */}
-            {/* O próprio componente lida com sticky se precisar, mas vamos envelopar caso necessário ou deixar ele fluir */}
-            <StickyScrollSection />
+            {/* 4. ENGINE SECTION (The Sticky Backdrop) */}
+            {/* Esta seção fica presa (sticky) no fundo enquanto a próxima sobe */}
+            <section className="relative lg:sticky lg:top-0 lg:z-0 min-h-screen bg-slate-950 py-24 flex items-center">
+                <div className="max-w-7xl mx-auto px-6 w-full">
+                    <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-center">
+                        <div className="order-2 md:order-1 space-y-8">
+                            <FadeInWhenVisible>
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 bg-violet-500/10 rounded-lg"><Zap className="text-violet-400" size={24} /></div>
+                                    <span className="text-violet-400 font-medium">Automação Invisível</span>
+                                </div>
+                                <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+                                    Você conversa. <br /> <span className="text-slate-500">O Tork trabalha.</span>
+                                </h2>
+                                <p className="text-lg text-slate-400 leading-relaxed">
+                                    Esqueça configurar fluxos complexos. O sistema identifica intenção de compra, cria o lead no CRM e agenda o follow-up automaticamente.
+                                </p>
+                            </FadeInWhenVisible>
 
-            {/* --- ENGINE SECTION (Sticky on Desktop) --- */}
-            <section className="relative bg-slate-950 text-white py-32 lg:sticky lg:top-0 lg:z-0 min-h-screen">
-                {/* Top Gradient Fade Transition */}
-                <div className="absolute -top-32 left-0 w-full h-32 bg-gradient-to-b from-transparent to-slate-950 pointer-events-none" />
-
-                <div className="max-w-7xl mx-auto px-6">
-                    <FadeInWhenVisible>
-                        <div className="text-center mb-20">
-                            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">
-                                Motor Proprietário.
-                                <br />
-                                <span className="text-slate-500">Zero Gambiarras.</span>
-                            </h2>
-                            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-                                Nossa arquitetura exclusiva garante que cada mensagem, tag e ação seja sincronizada instantaneamente.
-                            </p>
+                            {/* Feature List */}
+                            <div className="space-y-4">
+                                {[
+                                    "Captura de Leads via WhatsApp Oficial",
+                                    "Enriquecimento de Dados Automático",
+                                    "Distribuição Inteligente para Corretores"
+                                ].map((item, i) => (
+                                    <FadeInWhenVisible key={i} delay={i * 0.1}>
+                                        <div className="flex items-center gap-3 text-slate-300">
+                                            <CheckCircle size={18} className="text-emerald-500" />
+                                            {item}
+                                        </div>
+                                    </FadeInWhenVisible>
+                                ))}
+                            </div>
                         </div>
-                    </FadeInWhenVisible>
 
-                    <div className="grid md:grid-cols-2 gap-12 items-center mb-24">
-                        {/* Feature 1: Inbox Unificado */}
-                        <FadeInWhenVisible delay={0.2}>
-                            <HoverCard>
-                                <div className="bg-slate-900/30 backdrop-blur-md rounded-2xl p-8 border border-white/10 shadow-2xl shadow-black/50 hover:bg-slate-900/40 transition-all min-h-[400px] flex flex-col">
-                                    <div className="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center mb-6 border border-cyan-500/30">
-                                        <Zap className="text-cyan-400" size={24} />
-                                    </div>
-                                    <h3 className="text-2xl font-bold mb-3 text-white">Inbox Oficial (Zero Gambiarra)</h3>
-                                    <p className="text-slate-400 mb-6 flex-1">
-                                        Esqueça QR Codes caindo e celulares desligando. Conexão oficial via API do WhatsApp Business. Estabilidade de 99.9% para sua operação não parar nunca.
-                                    </p>
-
-                                    {/* Mini Mockup */}
-                                    <div className="bg-slate-950/50 rounded-xl p-4 border border-white/5 mt-auto">
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20">
-                                                <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-                                            </div>
-                                            <div>
-                                                <div className="text-xs font-semibold text-slate-200">API Oficial Conectada</div>
-                                                <div className="text-[10px] text-slate-500">Latência: 45ms</div>
-                                            </div>
-                                            <div className="ml-auto px-2 py-1 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                                                Online
-                                            </div>
+                        {/* Visualização de Causa e Efeito (Dark Glass) */}
+                        <div className="order-1 md:order-2">
+                            <FadeInWhenVisible delay={0.2}>
+                                <div className="bg-slate-900/30 backdrop-blur-md border border-white/10 rounded-3xl p-8 shadow-2xl relative">
+                                    <div className="flex flex-col gap-6">
+                                        {/* Chat Bubble */}
+                                        <div className="self-start bg-slate-800 border border-slate-700 p-4 rounded-2xl rounded-tl-sm max-w-[200px]">
+                                            <div className="h-2 w-24 bg-slate-700 rounded mb-2"></div>
+                                            <p className="text-xs text-slate-400">Gostaria de uma cotação...</p>
                                         </div>
-                                        <div className="text-xs text-slate-500 flex items-center gap-2">
-                                            <Shield size={12} className="text-slate-600" />
-                                            <span>Criptografia Ponta-a-Ponta</span>
+
+                                        {/* Arrow */}
+                                        <div className="self-center text-violet-500 animate-pulse">
+                                            <ArrowRight size={24} className="rotate-90 md:rotate-0" />
+                                        </div>
+
+                                        {/* CRM Card */}
+                                        <div className="self-end bg-slate-800 border-l-4 border-l-emerald-500 p-4 rounded-xl w-full max-w-[240px] shadow-lg">
+                                            <div className="flex justify-between mb-2">
+                                                <div className="h-2 w-16 bg-slate-700 rounded"></div>
+                                                <div className="h-2 w-8 bg-emerald-500/20 rounded"></div>
+                                            </div>
+                                            <div className="h-2 w-full bg-slate-700/50 rounded mb-2"></div>
+                                            <div className="h-2 w-2/3 bg-slate-700/50 rounded"></div>
                                         </div>
                                     </div>
                                 </div>
-                            </HoverCard>
-                        </FadeInWhenVisible>
-
-                        {/* Feature 2: Automação Visual */}
-                        <FadeInWhenVisible delay={0.3}>
-                            <HoverCard>
-                                <div className="bg-slate-900/30 backdrop-blur-md rounded-2xl p-8 border border-white/10 shadow-2xl shadow-black/50 hover:bg-slate-900/40 transition-all min-h-[400px] flex flex-col">
-                                    <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center mb-6 border border-violet-500/30">
-                                        <Globe className="text-violet-400" size={24} />
-                                    </div>
-                                    <h3 className="text-2xl font-bold mb-3 text-white">Automação Invisível</h3>
-                                    <p className="text-slate-400 mb-6 flex-1">
-                                        Você conversa, o Tork trabalha. O sistema identifica intenção de compra, cria o lead e agenda o follow-up automaticamente. Inteligência passiva, sem configurar fluxogramas complexos.
-                                    </p>
-
-                                    {/* Automation Visualization */}
-                                    <div className="bg-slate-950/50 rounded-xl p-6 border border-white/5 flex items-center justify-between gap-4 mt-auto relative overflow-hidden">
-                                        <div className="bg-slate-800 p-3 rounded-lg rounded-tl-none shadow-lg border border-slate-700 w-28 relative z-10">
-                                            <div className="h-1.5 w-12 bg-slate-600 rounded mb-2"></div>
-                                            <div className="text-[9px] text-slate-400 font-medium leading-tight">Tenho interesse no plano...</div>
-                                        </div>
-                                        <div className="text-violet-500 animate-pulse relative z-10 flex flex-col items-center">
-                                            <Zap size={20} fill="currentColor" className="drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]" />
-                                            <div className="text-[8px] font-bold uppercase tracking-widest text-violet-400/50 mt-1">AI</div>
-                                        </div>
-                                        <div className="bg-slate-800 p-3 rounded-lg shadow-lg border border-slate-700 border-l-4 border-l-green-500 w-28 relative z-10 transform translate-x-1 lg:translate-x-0">
-                                            <div className="text-[9px] font-bold text-white mb-1">Novo Lead</div>
-                                            <div className="h-1.5 w-16 bg-slate-700 rounded mb-2"></div>
-                                            <div className="inline-block px-1.5 py-0.5 bg-green-500/10 text-green-400 text-[8px] rounded font-bold uppercase border border-green-500/20">
-                                                Alta Prioridade
-                                            </div>
-                                        </div>
-                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-violet-500/5 to-transparent pointer-events-none" />
-                                    </div>
-                                </div>
-                            </HoverCard>
-                        </FadeInWhenVisible>
+                            </FadeInWhenVisible>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* --- INFRASTRUCTURE (Curtain Effect - Restored) --- */}
-            {/* InfrastructureScrollSection already handles z-index, but we ensure it works well */}
-            <InfrastructureScrollSection />
+            {/* 5. INFRASTRUCTURE SECTION (The Curtain Reveal) */}
+            {/* Z-Index 10 e sombra para cobrir a seção anterior */}
+            <section
+                ref={infraRef}
+                className="relative z-10 bg-zinc-50 py-32 shadow-[0_-50px_100px_-20px_rgba(0,0,0,0.5)] min-h-[200vh]"
+            >
+                <div className="sticky top-0 hidden lg:block h-4 w-full bg-gradient-to-b from-black/5 to-transparent z-20 pointer-events-none" />
 
-            {/* --- CTA FINAL (Event Horizon) --- */}
-            {/* Ensure slight overlap/transition */}
-            <SectionDivider variant="light-to-dark" className="z-20 relative -mb-1" />
+                <div className="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row">
 
-            <section className="relative py-32 bg-slate-950 overflow-hidden">
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[800px] h-[400px] bg-violet-600/20 blur-[150px] rounded-full pointer-events-none" />
+                    {/* ESQUERDA: VISUALIZADOR FIXO (STICKY) */}
+                    <div className="hidden lg:flex w-1/2 sticky top-0 h-screen items-center justify-center">
+                        <div className="w-full max-w-md aspect-square bg-white rounded-3xl shadow-2xl border border-zinc-100 p-8 relative overflow-hidden ring-1 ring-zinc-900/5 transition-all duration-500">
 
-                <div className="relative z-10 text-center px-6">
+                            {/* Grid de Fundo */}
+                            <div className="absolute inset-0 grid grid-cols-8 gap-4 p-8 opacity-[0.03]">
+                                {Array.from({ length: 64 }).map((_, i) => (
+                                    <div key={i} className="w-1.5 h-1.5 rounded-full bg-black" />
+                                ))}
+                            </div>
+
+                            {/* Camadas Animadas */}
+                            <div className="relative z-10 h-full flex flex-col items-center justify-center">
+                                {activeFeature === 0 && (
+                                    <motion.div key="lat" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
+                                        <div className="relative">
+                                            <div className="absolute inset-0 bg-cyan-400 blur-2xl opacity-20 animate-pulse" />
+                                            <Globe size={80} className="text-cyan-500 relative z-10" strokeWidth={1} />
+                                        </div>
+                                        <p className="text-center mt-6 font-bold text-cyan-700 text-lg">São Paulo, BR (South-1)</p>
+                                    </motion.div>
+                                )}
+                                {activeFeature === 1 && (
+                                    <motion.div key="sec" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                                        <Shield size={80} className="text-emerald-500 mx-auto" strokeWidth={1} />
+                                        <div className="mt-6 px-6 py-2 bg-emerald-100 text-emerald-700 rounded-full text-sm font-bold border border-emerald-200 shadow-sm">
+                                            AES-256 Encrypted
+                                        </div>
+                                    </motion.div>
+                                )}
+                                {activeFeature === 2 && (
+                                    <motion.div key="up" initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-200 text-center">
+                                                <div className="text-3xl font-bold text-slate-900">99.99%</div>
+                                                <div className="text-xs text-zinc-500 uppercase mt-1 font-semibold">Uptime</div>
+                                            </div>
+                                            <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-200 text-center">
+                                                <div className="text-3xl font-bold text-slate-900">50ms</div>
+                                                <div className="text-xs text-zinc-500 uppercase mt-1 font-semibold">Latency</div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* DIREITA: TEXTO SCROLLÁVEL */}
+                    <div className="w-full lg:w-1/2 lg:pl-24">
+
+                        {/* Bloco 1: Latência */}
+                        <div className="h-screen flex flex-col justify-center pointer-events-none"> {/* pointer-events-none para não atrapalhar scroll */}
+                            <div className="pointer-events-auto">
+                                <div className="w-12 h-12 bg-cyan-100 rounded-2xl flex items-center justify-center mb-6 text-cyan-600">
+                                    <Zap size={24} />
+                                </div>
+                                <h3 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6 tracking-tight">
+                                    Latência Zero. <br />
+                                    <span className="text-zinc-400">Servidores no Brasil.</span>
+                                </h3>
+                                <p className="text-xl text-zinc-500 leading-relaxed max-w-md">
+                                    Esqueça o delay. Nossa infraestrutura roda em São Paulo, garantindo que suas mensagens cheguem instantaneamente.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Bloco 2: Segurança */}
+                        <div className="h-screen flex flex-col justify-center pointer-events-none">
+                            <div className="pointer-events-auto">
+                                <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center mb-6 text-emerald-600">
+                                    <Lock size={24} />
+                                </div>
+                                <h3 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6 tracking-tight">
+                                    Blindagem Militar. <br />
+                                    <span className="text-zinc-400">Seus dados são seus.</span>
+                                </h3>
+                                <p className="text-xl text-zinc-500 leading-relaxed max-w-md">
+                                    Criptografia de ponta a ponta e conformidade total com a LGPD. Nem nós temos acesso às suas conversas.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Bloco 3: Redundância */}
+                        <div className="h-screen flex flex-col justify-center pointer-events-none">
+                            <div className="pointer-events-auto">
+                                <div className="w-12 h-12 bg-violet-100 rounded-2xl flex items-center justify-center mb-6 text-violet-600">
+                                    <Server size={24} />
+                                </div>
+                                <h3 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6 tracking-tight">
+                                    Sempre Online. <br />
+                                    <span className="text-zinc-400">Redundância tripla.</span>
+                                </h3>
+                                <p className="text-xl text-zinc-500 leading-relaxed max-w-md">
+                                    Arquitetura distribuída que garante disponibilidade mesmo em picos de tráfego. Seu negócio nunca para.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* 6. CTA (Event Horizon - Dark Mode Return) */}
+            <SectionDivider variant="light-to-dark" className="relative z-20" />
+
+            <section className="relative flex flex-col items-center justify-center bg-slate-950 overflow-hidden py-32 pb-40 z-20">
+                {/* Background Floor Glow */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[400px] bg-violet-600/20 blur-[180px] rounded-full pointer-events-none" />
+
+                <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
                     <FadeInWhenVisible>
                         <h2 className="text-5xl md:text-8xl lg:text-9xl font-bold tracking-tighter mb-8 text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-white/40">
                             O futuro da sua <br /> corretora é agora.
@@ -212,22 +329,21 @@ export default function LandingPage() {
                     <FadeInWhenVisible delay={0.4}>
                         <div className="flex flex-col items-center gap-6">
                             <a
-                                href={CRM_URL}
-                                className="group relative inline-flex h-16 items-center justify-center overflow-hidden rounded-full bg-white px-12 font-medium text-slate-950 transition-all duration-300 hover:bg-zinc-200 hover:scale-105 hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.5)] focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 focus:ring-offset-slate-50"
+                                href="#"
+                                className="group relative inline-flex h-16 items-center justify-center overflow-hidden rounded-full bg-white px-12 font-medium text-slate-950 transition-all duration-300 hover:bg-zinc-200 hover:scale-105 hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.5)]"
                             >
                                 <span className="relative z-10 text-lg font-bold mr-2">Começar Gratuitamente</span>
                                 <ArrowRight className="relative z-10 group-hover:translate-x-1 transition-transform" />
-                                <div className="absolute inset-0 -translate-x-full group-hover:animate-shimmer bg-gradient-to-r from-transparent via-white/80 to-transparent z-0 opacity-50" />
+                                <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/80 to-transparent z-0 opacity-50" />
                             </a>
-                            <span className="text-sm text-zinc-600">
-                                Disponível para Web, iOS e Android.
-                            </span>
                         </div>
                     </FadeInWhenVisible>
                 </div>
             </section>
 
+            {/* 7. FOOTER */}
             <MegaFooter />
-        </div>
+
+        </main>
     );
 }

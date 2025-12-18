@@ -2,11 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
-body {
-  overflow-x: hidden;
-  max-width: 100vw;
-}
+/* 
+   REMOVIDO: html, body { overflow-x: hidden }
+   MOTIVO: Quebrava position: sticky e scroll animations.
+   SOLUÇÃO: Usar overflow-hidden apenas em containers específicos se necessário.
+*/
 
 /* Tailwind Animation Delays */
 .animation-delay-2000 {
@@ -17,7 +17,7 @@ body {
   animation-delay: 4s;
 }
 
-/* Custom Utilities */
+/* Perspective for 3D transforms */
 .perspective-1000 {
   perspective: 1000px;
 }
