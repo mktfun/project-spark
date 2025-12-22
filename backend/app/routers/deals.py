@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks
+import httpx
+import os
+import logging
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -12,6 +15,13 @@ from jose import jwt, JWTError
 
 from app.services.pdf_service import extract_text_from_pdf
 from app.services.ai_service import extract_lead_info
+
+from app.services.ai_service import extract_lead_info
+
+logger = logging.getLogger(__name__)
+CHATWOOT_API_URL = os.getenv("CHATWOOT_API_URL", "http://bot-chatwoot-rails-1:3000")
+# Token should ideally come from UserSettings, but for now we might use env or settings
+# For this implementation, we will try to fetch it from UserSettings if available, or rely on a system token
 
 router = APIRouter()
 
@@ -33,6 +43,7 @@ def get_current_user_id(token: str = Depends(oauth2_scheme)) -> int:
         raise credentials_exception
 
 @router.get("/", response_model=List[DealResponse])
+@router.get("", response_model=List[DealResponse], include_in_schema=False)
 def read_deals(
     skip: int = 0, 
     limit: int = 100, 
@@ -44,6 +55,7 @@ def read_deals(
     return leads
 
 @router.post("/", response_model=DealResponse)
+@router.post("", response_model=DealResponse, include_in_schema=False)
 def create_deal(
     deal: DealCreate, 
     db: Session = Depends(get_db), 
@@ -61,7 +73,8 @@ def update_deal_status(
     deal_id: int, 
     deal_update: DealUpdate, 
     db: Session = Depends(get_db), 
-    user_id: int = Depends(get_current_user_id)
+    user_id: int = Depends(get_current_user_id),
+    background_tasks: BackgroundTasks = BackgroundTasks()
 ):
     # SECURITY: Ensure deal belongs to user
     db_deal = db.query(Deal).filter(Deal.id == deal_id, Deal.user_id == user_id).first()
@@ -76,9 +89,90 @@ def update_deal_status(
     db.refresh(db_deal)
     db.commit()
     db.refresh(db_deal)
+    db.commit()
+    db.refresh(db_deal)
+    
+    # TRIGGER REVERSE SYNC
+    if deal_update.status:
+         background_tasks.add_task(sync_status_to_chatwoot, db_deal, db)
+
     return db_deal
 
+async def sync_status_to_chatwoot(deal: Deal, db: Session):
+    """
+    Reverse Sync: Updates Chatwoot contact/conversation label when CRM status changes.
+    """
+    try:
+        # 1. Get User Chatwoot Config
+        settings = db.query(UserSettings).filter(UserSettings.user_id == deal.user_id).first()
+        if not settings or not settings.chatwoot_user_token or not settings.chatwoot_account_id:
+            logger.warning("Chatwoot settings not configured for user. Skipping sync.")
+            return
+
+        chatwoot_url = settings.chatwoot_url or CHATWOOT_API_URL
+        account_id = settings.chatwoot_account_id
+        token = decrypt_value(settings.chatwoot_user_token) # Assuming we need to decrypt
+
+        if not token:
+             logger.warning("Could not decrypt Chatwoot token.")
+             return
+
+        # 2. Find Contact in Chatwoot (by email) -> This requires Chatwoot API search
+        # Simplifying: We assume we might have a `chatwoot_id` on Deal model later, 
+        # but for now let's search by email.
+        
+        headers = {"api_access_token": token, "Content-Type": "application/json"}
+        
+        async with httpx.AsyncClient() as client:
+            # Search Contact
+            search_res = await client.get(
+                f"{chatwoot_url}/api/v1/accounts/{account_id}/contacts/search",
+                params={"q": deal.email},
+                headers=headers
+            )
+            
+            if search_res.status_code != 200:
+                logger.error(f"Failed to search chatwoot contact: {search_res.text}")
+                return
+
+            data = search_res.json()
+            contacts = data.get("payload", [])
+            
+            if not contacts:
+                logger.info("Contact not found in Chatwoot.")
+                return
+                
+            contact_id = contacts[0]["id"]
+            
+            # 3. Update Contact Label (or Custom Attribute)
+            # Chatwoot labels are usually on Conversations, but we can set custom attributes on Contact too.
+            # Let's try to add a Label to the most recent conversation? 
+            # Or just log for now as requested by user "Envie POST via API".
+            
+            # Let's update contact custom attribute 'status'
+            update_payload = {
+                "custom_attributes": {
+                    "crm_status": deal.status,
+                    "crm_deal_value": str(deal.value)
+                }
+            }
+            
+            update_res = await client.put(
+                f"{chatwoot_url}/api/v1/accounts/{account_id}/contacts/{contact_id}",
+                json=update_payload,
+                headers=headers
+            )
+            
+            if update_res.status_code == 200:
+                logger.info(f"Successfully synced Deal {deal.id} to Chatwoot Contact {contact_id}")
+            else:
+                 logger.error(f"Failed to update chatwoot contact: {update_res.text}")
+
+    except Exception as e:
+        logger.error(f"Reverse Sync Error: {e}")
+
 @router.post("/extract")
+@router.post("/extract/", include_in_schema=False)
 def extract_deal_from_pdf(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),

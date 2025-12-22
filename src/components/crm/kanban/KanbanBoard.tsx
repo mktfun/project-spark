@@ -16,66 +16,50 @@ import {
 import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
 import { KanbanColumn } from './KanbanColumn';
 import { KanbanCard, Deal } from './KanbanCard';
-import { Loader2 } from 'lucide-react';
-import { Button } from '@/components/crm/Button';
+import { Loader2, Plus } from 'lucide-react';
+import { fetchStages, fetchLeads, updateLeadStatus } from '@/lib/api';
+import { StageDialog } from './StageDialog';
 
-// Initial Columns Setup
-const COLUMNS = [
-    { id: 'new', title: 'Novo Lead', color: 'bg-blue-500' },
-    { id: 'contact', title: 'Em Contato', color: 'bg-amber-500' },
-    { id: 'proposal', title: 'Proposta Enviada', color: 'bg-purple-500' },
-    { id: 'won', title: 'Ganho / Efetivado', color: 'bg-emerald-500' },
-    { id: 'lost', title: 'Perdido', color: 'bg-red-500' },
-];
+export interface Stage {
+    id: number;
+    name: string;
+    slug: string; // Used as the column ID
+    color: string;
+    order: number;
+}
 
 export const KanbanBoard = () => {
+    const [stages, setStages] = useState<Stage[]>([]);
     const [deals, setDeals] = useState<Deal[]>([]);
     const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Load Deals
+    // Stage Management State
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [activeStage, setActiveStage] = useState<Stage | null>(null);
+
+    // Initial Data Load
     useEffect(() => {
-        fetchDeals();
-    }, []);
-
-    const fetchDeals = async () => {
-        try {
-            const token = localStorage.getItem('tork_token');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/crm/leads`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setDeals(data);
+        const loadData = async () => {
+            try {
+                const [stagesData, leadsData] = await Promise.all([
+                    fetchStages(),
+                    fetchLeads()
+                ]);
+                setStages(stagesData);
+                setDeals(leadsData);
+            } catch (e) {
+                console.error("Failed to load Kanban data", e);
+            } finally {
+                setIsLoading(false);
             }
-        } catch (e) {
-            console.error("Failed to fetch deals", e);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const updateDealStatus = async (dealId: number, newStatus: string) => {
-        try {
-            const token = localStorage.getItem('tork_token');
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/crm/leads/${dealId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ status: newStatus })
-            });
-        } catch (e) {
-            console.error("Failed to update status", e);
-            // Ideally revert optmistic update here
-            fetchDeals(); // Resync
-        }
-    };
+        };
+        loadData();
+    }, []);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
-            activationConstraint: { distance: 5 } // Prevent accidental drags
+            activationConstraint: { distance: 5 }
         }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
@@ -109,12 +93,9 @@ export const KanbanBoard = () => {
                 const activeIndex = items.findIndex((t) => t.id === activeId);
                 const overIndex = items.findIndex((t) => t.id === overId);
 
-                // If specific logic needed for reordering within same column:
-                // For now, we just rely on column change in dragEnd, 
-                // OR we optmistically update status here if columns differ.
                 if (items[activeIndex].status !== items[overIndex].status) {
                     const newItems = [...items];
-                    newItems[activeIndex].status = items[overIndex].status; // Optimistic column switch
+                    newItems[activeIndex].status = items[overIndex].status;
                     return arrayMove(newItems, activeIndex, overIndex);
                 }
 
@@ -130,7 +111,7 @@ export const KanbanBoard = () => {
 
                 if (items[activeIndex].status !== newStatus) {
                     const newItems = [...items];
-                    newItems[activeIndex].status = newStatus; // Optimistic update
+                    newItems[activeIndex].status = newStatus;
                     return arrayMove(newItems, activeIndex, activeIndex);
                 }
                 return items;
@@ -138,7 +119,7 @@ export const KanbanBoard = () => {
         }
     };
 
-    const onDragEnd = (event: DragEndEvent) => {
+    const onDragEnd = async (event: DragEndEvent) => {
         setActiveDeal(null);
         const { active, over } = event;
         if (!over) return;
@@ -149,30 +130,39 @@ export const KanbanBoard = () => {
         const activeDeal = deals.find(d => d.id === activeId);
         if (!activeDeal) return;
 
-        // If dropped on a column directly
+        let newStatus = activeDeal.status;
+
+        // Determine new status
         if (over.data.current?.type === 'Column') {
-            const newStatus = overId as string;
-            if (activeDeal.status !== newStatus) {
-                updateDealStatus(activeId, newStatus);
-            }
-        }
-        // If dropped on another card
-        else if (over.data.current?.type === 'Deal') {
+            newStatus = overId as string;
+        } else if (over.data.current?.type === 'Deal') {
             const overDeal = deals.find(d => d.id === overId);
-            if (overDeal && activeDeal.status !== overDeal.status) {
-                updateDealStatus(activeId, overDeal.status);
+            if (overDeal) newStatus = overDeal.status;
+        }
+
+        // Only update API if status changed
+        if (activeDeal.status !== newStatus) {
+            // Optimistic update already happened in DragOver mostly, but ensure consistency
+            setDeals(prev => prev.map(d => d.id === activeId ? { ...d, status: newStatus } : d));
+
+            try {
+                await updateLeadStatus(activeId, newStatus);
+            } catch (err) {
+                console.error("Failed to persist move", err);
+                // Revert or show error
+                // For now, strict "Clean" UX suggests silent fail or toast (not implemented yet)
             }
         }
     };
 
-    // Group deals by column
-    const dealsByColumn = COLUMNS.reduce((acc, col) => {
-        acc[col.id] = deals.filter(d => d.status === col.id);
+    // Group deals by column (Stage Slug)
+    const dealsByColumn = stages.reduce((acc, stage) => {
+        acc[stage.slug] = deals.filter(d => d.status === stage.slug);
         return acc;
     }, {} as Record<string, Deal[]>);
 
     if (isLoading) {
-        return <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-crm-secondary" /></div>;
+        return <div className="flex justify-center items-center h-full text-slate-400"><Loader2 className="animate-spin mr-2" /> Carregando Pipeline...</div>;
     }
 
     return (
@@ -180,24 +170,68 @@ export const KanbanBoard = () => {
             sensors={sensors}
             collisionDetection={closestCorners}
             onDragStart={onDragStart}
-            onDragOver={onDragOver} // Handle moving between lists
-            onDragEnd={onDragEnd} // Handle final commit
+            onDragOver={onDragOver}
+            onDragEnd={onDragEnd}
         >
-            <div className="flex h-full gap-6 overflow-x-auto pb-4 items-start">
-                {COLUMNS.map((col) => (
+            <div className="flex h-full gap-4 overflow-x-auto pb-4 items-start px-2">
+                {stages.map((stage) => (
                     <KanbanColumn
-                        key={col.id}
-                        id={col.id}
-                        title={col.title}
-                        color={col.color}
-                        deals={dealsByColumn[col.id] || []}
+                        key={stage.slug}
+                        id={stage.slug}
+                        title={stage.name}
+                        color={stage.color}
+                        deals={dealsByColumn[stage.slug] || []}
+                        onEdit={() => {
+                            setActiveStage(stage);
+                            setIsDialogOpen(true);
+                        }}
+                        onDelete={async () => {
+                            if (window.confirm('Tem certeza que deseja excluir este estágio? Leads associados podem ser perdidos.')) {
+                                try {
+                                    /* In a real app we would check for dependencies first or prevent deletion if leads exist */
+                                    // await deleteStage(stage.id); 
+                                    // For now just alert that this is a critical action
+                                    alert('Deleção bloqueada por segurança nesta versão.');
+                                } catch (e) {
+                                    console.error(e);
+                                }
+                            }
+                        }}
                     />
                 ))}
+
+                {/* Add Stage Button */}
+                <div className="shrink-0 w-[30px] pt-2">
+                    <button
+                        onClick={() => {
+                            setActiveStage(null);
+                            setIsDialogOpen(true);
+                        }}
+                        className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all border border-slate-700"
+                        title="Adicionar Estágio"
+                    >
+                        <Plus className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
 
             <DragOverlay>
                 {activeDeal && <KanbanCard deal={activeDeal} isOverlay />}
             </DragOverlay>
+
+            <StageDialog
+                isOpen={isDialogOpen}
+                onClose={() => setIsDialogOpen(false)}
+                onSuccess={() => {
+                    // Reload data
+                    const loadData = async () => {
+                        const [stagesData] = await Promise.all([fetchStages()]);
+                        setStages(stagesData);
+                    };
+                    loadData();
+                }}
+                stageToEdit={activeStage}
+            />
         </DndContext>
     );
 };

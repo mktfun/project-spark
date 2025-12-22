@@ -1,0 +1,10 @@
+{
+    "event": "contact_created",
+    "data": {
+        "contact": {
+            "name": "Teste Webhook Enterprise",
+            "email": "enterprise@tork.com",
+            "phone_number": "+5511988887777"
+        }
+    }
+}

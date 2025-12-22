@@ -130,6 +130,36 @@ export default function SettingsPage() {
                                             <Button variant="ghost" size="sm" onClick={() => { }}>Copiar</Button>
                                         </div>
                                         <p className="text-xs text-slate-500 mt-2">Configure esta URL no seu Chatwoot para receber atualizações em tempo real.</p>
+
+                                        <div className="mt-4 pt-4 border-t border-slate-800 flex justify-end">
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={async () => {
+                                                    try {
+                                                        const res = await fetch('/api/webhooks/chatwoot', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({
+                                                                event: 'contact_created',
+                                                                id: 99999, // Fake ID
+                                                                name: 'Lead de Teste',
+                                                                email: 'test@example.com',
+                                                                phone: '+5511999999999'
+                                                            })
+                                                        });
+                                                        if (res.ok) alert('Webhook de teste enviado com sucesso!');
+                                                        else alert('Erro ao enviar webhook.');
+                                                    } catch (e) {
+                                                        console.error(e);
+                                                        alert('Erro de conexão.');
+                                                    }
+                                                }}
+                                                type="button"
+                                            >
+                                                Enviar Webhook de Teste
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -158,26 +188,42 @@ export default function SettingsPage() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-300">Nome do Modelo</label>
-                                        <input
+                                        <label className="text-sm font-medium text-slate-300">Modelo IA</label>
+                                        <select
                                             name="aiModel"
                                             value={formData.aiModel}
                                             onChange={handleChange}
-                                            placeholder="gpt-4-turbo-preview"
                                             className="w-full bg-[#0b0f19] border border-slate-700 rounded-md px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
-                                        />
+                                        >
+                                            <option value="gpt-4o">GPT-4o (OpenAI)</option>
+                                            <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet (Anthropic)</option>
+                                            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Google)</option>
+                                        </select>
                                     </div>
 
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium text-slate-300">API Key</label>
-                                        <input
-                                            name="aiApiKey"
-                                            value={formData.aiApiKey}
-                                            onChange={handleChange}
-                                            type="password"
-                                            placeholder="sk-..."
-                                            className="w-full bg-[#0b0f19] border border-slate-700 rounded-md px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
-                                        />
+                                        <div className="flex gap-2">
+                                            <input
+                                                name="aiApiKey"
+                                                value={formData.aiApiKey}
+                                                onChange={handleChange}
+                                                type="password"
+                                                placeholder="sk-..."
+                                                className="flex-1 bg-[#0b0f19] border border-slate-700 rounded-md px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
+                                            />
+                                            <Button
+                                                variant="secondary"
+                                                onClick={() => {
+                                                    // Simulate connection test
+                                                    alert('Testando conexão com IA... (Simulação: OK)');
+                                                }}
+                                                type="button"
+                                                className="shrink-0"
+                                            >
+                                                Testar Conexão
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

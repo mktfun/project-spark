@@ -20,14 +20,17 @@ app.add_middleware(
 )
 
 from app.core.database import engine, Base
-from app.routers import auth, settings, deals
+from app.routers import auth, settings, deals, webhooks, stages
+
 
 # Create Tables (Simple Migration)
 Base.metadata.create_all(bind=engine)
 
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(settings.router, prefix="/crm/settings", tags=["Settings"])
+app.include_router(stages.router, prefix="/crm/stages", tags=["Stages"])
 app.include_router(deals.router, prefix="/crm/leads", tags=["Deals"])
+app.include_router(webhooks.router, prefix="/webhooks", tags=["Webhooks"])
 
 @app.get("/")
 def read_root():

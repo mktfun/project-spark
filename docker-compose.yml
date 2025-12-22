@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Next.js Frontend - Renomeado para tork-crm-app (hifen) para DNS seguro
+  # Next.js Frontend
   tork-crm-app:
     container_name: tork-crm-app
     build:
@@ -15,10 +15,12 @@ services:
     depends_on:
       - tork-api
       - tork-db
-    restart: always # Garante que volte se cair
+    restart: always
     networks:
-      - tork-network
-      - app_network # Rede externa do Cloudflare Tunnel
+      tork-network:
+      app_network:
+        aliases:
+          - tork_crm_app
 
   # FastAPI Backend
   tork-api:
@@ -30,7 +32,7 @@ services:
       - "8001:8000"
     environment:
       - DATABASE_URL=postgresql://tork_user:tork_pass@tork-db:5432/tork_crm
-      - CHATWOOT_API_URL=http://bot-chatwoot-rails-1:3000 # Direct Docker Network Access
+      - CHATWOOT_API_URL=http://bot-chatwoot-rails-1:3000
     depends_on:
       - tork-db
     restart: always
@@ -38,7 +40,7 @@ services:
       - ./backend:/app
     networks:
       - tork-network
-      - app_network # Conexão direta com chatwoot
+      - app_network
 
   # PostgreSQL Database
   tork-db:
