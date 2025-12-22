@@ -66,7 +66,7 @@ export default function Home() {
 
                     <FadeInWhenVisible delay={0.3}>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <a href="#" className="w-full sm:w-auto px-8 py-3.5 bg-white text-slate-950 rounded-full font-bold hover:bg-slate-200 transition-colors shadow-lg shadow-white/5">
+                            <a href="https://crm.davicode.me/login" className="w-full sm:w-auto px-8 py-3.5 bg-white text-slate-950 rounded-full font-bold hover:bg-slate-200 transition-colors shadow-lg shadow-white/5">
                                 Começar Agora
                             </a>
                             <button className="w-full sm:w-auto px-8 py-3.5 text-slate-300 hover:text-white transition-colors font-medium flex items-center justify-center gap-2">
@@ -206,7 +206,7 @@ export default function Home() {
                     <FadeInWhenVisible delay={0.4}>
                         <div className="flex flex-col items-center gap-6">
                             <a
-                                href="#"
+                                href="https://crm.davicode.me/login"
                                 className="group relative inline-flex h-16 items-center justify-center overflow-hidden rounded-full bg-white px-12 font-medium text-slate-950 transition-all duration-300 hover:bg-zinc-200 hover:scale-105 hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.5)]"
                             >
                                 <span className="relative z-10 text-lg font-bold mr-2">Começar Gratuitamente</span>

@@ -87,9 +87,15 @@ export function SmartNavbar() {
 
                         {/* Direita */}
                         <div className="flex items-center justify-end gap-3">
+                            <a
+                                href="https://crm.davicode.me/login"
+                                className="text-sm font-semibold text-white/70 hover:text-white transition-colors mr-2"
+                            >
+                                Acessar Sistema
+                            </a>
                             <motion.a
                                 layout="position"
-                                href="#"
+                                href="https://crm.davicode.me/login"
                                 className={`flex items-center justify-center text-sm font-bold rounded-full transition-all whitespace-nowrap
                     ${scrolled ? "bg-white text-slate-950 px-6 py-2.5 hover:bg-zinc-200" : "bg-white/10 text-white px-7 py-3 hover:bg-white/20 border border-white/10"}`}
                             >
@@ -143,7 +149,7 @@ export function SmartNavbar() {
                             ))}
                             <hr className="border-white/10 my-8 w-1/2 mx-auto" />
                             {/* <a href="/login" className="text-xl text-zinc-400 font-medium">Login</a> */}
-                            <a href="#" onClick={() => setMobileMenuOpen(false)} className="w-full py-4 bg-white text-slate-950 rounded-2xl font-bold text-xl mt-4 shadow-xl shadow-cyan-500/10">
+                            <a href="https://crm.davicode.me/login" onClick={() => setMobileMenuOpen(false)} className="w-full py-4 bg-white text-slate-950 rounded-2xl font-bold text-xl mt-4 shadow-xl shadow-cyan-500/10">
                                 Começar Agora
                             </a>
                         </div>

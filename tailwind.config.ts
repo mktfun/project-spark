@@ -23,7 +23,15 @@ const config: Config = {
                     900: '#020410', // Deepest Black
                     800: '#0a0e27', // Deep Navy
                     700: '#131730', // Panel BG
-                }
+                },
+                // CRM Specific Colors (BrokerOS V2)
+                crm: {
+                    primary: '#0F172A', // Deep Navy
+                    secondary: '#3B82F6', // Royal Blue
+                    success: '#10B981', // Emerald Green
+                    warning: '#F59E0B', // Amber
+                    error: '#EF4444',  // Crimson
+                },
             },
             backgroundImage: {
                 'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
