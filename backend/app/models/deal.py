@@ -1,7 +1,6 @@
 import enum
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum
-from sqlalchemy.sql import func
-from app.core.database import Base
+from sqlalchemy import Column, Integer, String, Float, Enum
+from app.core.database import Base, TimestampMixin
 
 class DealStatus(str, enum.Enum):
     NEW = "new"
@@ -15,19 +14,16 @@ class DealPriority(str, enum.Enum):
     MEDIUM = "medium"
     LOW = "low"
 
-class Deal(Base):
+class Deal(Base, TimestampMixin):
     __tablename__ = "crm_deals"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, index=True, nullable=False) # Not FK to separate auth table, but logically linked
+    user_id = Column(Integer, index=True, nullable=False)
     
     name = Column(String, index=True, nullable=False)
     email = Column(String, nullable=True)
     phone = Column(String, nullable=True)
     
-    status = Column(Enum(DealStatus), default=DealStatus.NEW)
+    status = Column(String, default="new")  # Dynamic status using Stage slugs
     value = Column(Float, default=0.0)
     priority = Column(Enum(DealPriority), default=DealPriority.MEDIUM)
-    
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())

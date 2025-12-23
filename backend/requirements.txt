@@ -15,5 +15,8 @@ pydantic-settings==2.1.0
 openai==1.6.1
 google-auth==2.25.2
 httpx==0.25.2
-pymupdf==1.23.6 # Para 'import fitz'
+pymupdf==1.23.6
 anthropic==0.7.0
+redis==5.0.1
+pycryptodome==3.19.0
+tenacity==8.2.3

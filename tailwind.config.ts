@@ -1,12 +1,13 @@
 import type { Config } from 'tailwindcss'
+import plugin from 'tailwindcss/plugin'
 
 const config: Config = {
     content: [
         './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
         './src/components/**/*.{js,ts,jsx,tsx,mdx}',
         './src/app/**/*.{js,ts,jsx,tsx,mdx}',
-        './src/app/(site)/**/*.{js,ts,jsx,tsx,mdx}',  // Explicitly include (site) route group
-        './src/app/(app)/**/*.{js,ts,jsx,tsx,mdx}',   // Explicitly include (app) route group
+        './src/app/(site)/**/*.{js,ts,jsx,tsx,mdx}',
+        './src/app/(app)/**/*.{js,ts,jsx,tsx,mdx}',
     ],
     theme: {
         extend: {
@@ -15,23 +16,34 @@ const config: Config = {
                     50: '#e0fbff',
                     100: '#b3f4ff',
                     400: '#33f0ff',
-                    500: '#00f5ff', // TORK NEON BASE
+                    500: '#00f5ff',
                     600: '#00ccda',
                     900: '#003d42',
                 },
                 dark: {
-                    900: '#020410', // Deepest Black
-                    800: '#0a0e27', // Deep Navy
-                    700: '#131730', // Panel BG
+                    900: '#020410',
+                    800: '#0a0e27',
+                    700: '#131730',
                 },
-                // CRM Specific Colors (BrokerOS V2)
                 crm: {
-                    primary: '#0F172A', // Deep Navy
-                    secondary: '#3B82F6', // Royal Blue
-                    success: '#10B981', // Emerald Green
-                    warning: '#F59E0B', // Amber
-                    error: '#EF4444',  // Crimson
+                    primary: '#0F172A',
+                    secondary: '#3B82F6',
+                    success: '#10B981',
+                    warning: '#F59E0B',
+                    error: '#EF4444',
                 },
+            },
+            backdropBlur: {
+                'xs': '2px',
+                'sm': '4px',
+                'md': '12px',
+                'lg': '16px',
+                'xl': '24px',
+                '2xl': '40px',
+            },
+            boxShadow: {
+                'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                'glass-sm': '0 4px 16px 0 rgba(31, 38, 135, 0.2)',
             },
             backgroundImage: {
                 'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
@@ -67,6 +79,17 @@ const config: Config = {
             },
         },
     },
-    plugins: [],
+    plugins: [
+        plugin(function ({ addComponents }) {
+            addComponents({
+                '.glass-panel': {
+                    '@apply bg-white/10 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-glass': {},
+                },
+                '.glass-card': {
+                    '@apply bg-white/5 dark:bg-white/[0.02] backdrop-blur-md border border-white/10 dark:border-white/5 hover:bg-white/15 dark:hover:bg-white/[0.08] transition-all shadow-glass-sm': {},
+                },
+            })
+        }),
+    ],
 }
 export default config

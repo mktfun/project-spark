@@ -145,11 +145,44 @@ async def sync_status_to_chatwoot(deal: Deal, db: Session):
             contact_id = contacts[0]["id"]
             
             # 3. Update Contact Label (or Custom Attribute)
-            # Chatwoot labels are usually on Conversations, but we can set custom attributes on Contact too.
-            # Let's try to add a Label to the most recent conversation? 
-            # Or just log for now as requested by user "Envie POST via API".
+            # Chatwoot labels are usually on Conversations.
+            # LOGIC: Read-Modify-Write for Conversation Labels
             
-            # Let's update contact custom attribute 'status'
+            # 3.1 Find Open Conversation for Contact
+            conv_res = await client.get(
+                f"{chatwoot_url}/api/v1/accounts/{account_id}/conversations",
+                params={"status": "open", "contact_id": int(contact_id)},
+                headers=headers
+            )
+            
+            if conv_res.status_code == 200:
+                conv_data = conv_res.json()
+                conversations = conv_data.get("data", {}).get("payload", [])
+                
+                if conversations:
+                    # Pick the most recent open conversation
+                    conversation = conversations[0]
+                    conversation_id = conversation["id"]
+                    current_labels = conversation.get("labels", [])
+                    
+                    # MERGE LABELS
+                    new_label = deal.status
+                    if new_label not in current_labels:
+                        updated_labels = current_labels + [new_label]
+                        
+                        # POST LABELS (Read-Modify-Write complete)
+                        label_res = await client.post(
+                            f"{chatwoot_url}/api/v1/accounts/{account_id}/conversations/{conversation_id}/labels",
+                            json={"labels": updated_labels},
+                            headers=headers
+                        )
+                        
+                        if label_res.status_code == 200:
+                            logger.info(f"Updated labels for Conversation {conversation_id}: {updated_labels}")
+                        else:
+                            logger.error(f"Failed to update labels: {label_res.text}")
+            
+            # 3.2 Update contact custom attribute 'status' (Legacy/Backup)
             update_payload = {
                 "custom_attributes": {
                     "crm_status": deal.status,

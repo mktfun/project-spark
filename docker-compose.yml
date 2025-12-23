@@ -58,6 +58,16 @@ services:
     networks:
       - tork-network
 
+  # Redis Cache
+  tork-redis:
+    image: redis:7-alpine
+    container_name: tork-redis
+    networks:
+      - tork-network
+    volumes:
+      - tork_redis_data:/data
+    restart: always
+
 networks:
   tork-network:
     driver: bridge
@@ -66,3 +76,4 @@ networks:
 
 volumes:
   tork_pgdata:
+  tork_redis_data:

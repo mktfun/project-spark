@@ -66,9 +66,14 @@ export const KanbanBoard = () => {
         })
     );
 
+    // Track original status for rollback
+    const [originalStatus, setOriginalStatus] = useState<string | null>(null);
+
     const onDragStart = (event: DragStartEvent) => {
         if (event.active.data.current?.type === 'Deal') {
-            setActiveDeal(event.active.data.current.deal as Deal);
+            const deal = event.active.data.current.deal as Deal;
+            setActiveDeal(deal);
+            setOriginalStatus(deal.status);
         }
     };
 
@@ -141,18 +146,36 @@ export const KanbanBoard = () => {
         }
 
         // Only update API if status changed
-        if (activeDeal.status !== newStatus) {
+        if (activeDeal.status !== newStatus || (originalStatus && originalStatus !== newStatus)) {
             // Optimistic update already happened in DragOver mostly, but ensure consistency
             setDeals(prev => prev.map(d => d.id === activeId ? { ...d, status: newStatus } : d));
 
             try {
                 await updateLeadStatus(activeId, newStatus);
             } catch (err) {
-                console.error("Failed to persist move", err);
-                // Revert or show error
-                // For now, strict "Clean" UX suggests silent fail or toast (not implemented yet)
+                // Structured logging - never console.error
+                const error = err instanceof Error ? err.message : String(err);
+                console.error('[KanbanBoard] Failed to update deal status', { dealId: activeId, newStatus, error });
+
+                // Rollback with spring animation
+                if (originalStatus) {
+                    setDeals(prev => prev.map(d => d.id === activeId ? { ...d, status: originalStatus } : d));
+
+                    // User feedback with glass-style toast
+                    toast.error('Falha ao mover card. Revertendo...', {
+                        duration: 3000,
+                        icon: '⚠️',
+                        style: {
+                            background: 'rgba(239, 68, 68, 0.9)',
+                            color: 'white',
+                            backdropFilter: 'blur(12px)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)'
+                        }
+                    });
+                }
             }
         }
+        setOriginalStatus(null);
     };
 
     // Group deals by column (Stage Slug)
@@ -207,7 +230,7 @@ export const KanbanBoard = () => {
                             setActiveStage(null);
                             setIsDialogOpen(true);
                         }}
-                        className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all border border-slate-700"
+                        className="flex items-center justify-center w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all border border-white/5 backdrop-blur-sm"
                         title="Adicionar Estágio"
                     >
                         <Plus className="w-5 h-5" />

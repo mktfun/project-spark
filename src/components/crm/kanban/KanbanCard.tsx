@@ -22,6 +22,8 @@ interface KanbanCardProps {
     isOverlay?: boolean;
 }
 
+import { motion } from 'framer-motion';
+
 export const KanbanCard = ({ deal, isOverlay }: KanbanCardProps) => {
     const {
         setNodeRef,
@@ -39,14 +41,14 @@ export const KanbanCard = ({ deal, isOverlay }: KanbanCardProps) => {
     });
 
     const style = {
-        transform: CSS.Transform.toString(transform),
+        transform: CSS.Translate.toString(transform), // Use Translate for smoother GPU
         transition,
     };
 
     const priorityColors = {
-        high: 'bg-red-100 text-red-700 border-red-200',
-        medium: 'bg-amber-100 text-amber-700 border-amber-200',
-        low: 'bg-blue-100 text-blue-700 border-blue-200',
+        high: 'bg-red-500/20 text-red-200 border-red-500/30',
+        medium: 'bg-amber-500/20 text-amber-200 border-amber-500/30',
+        low: 'bg-blue-500/20 text-blue-200 border-blue-500/30',
     };
 
     if (isDragging) {
@@ -54,41 +56,59 @@ export const KanbanCard = ({ deal, isOverlay }: KanbanCardProps) => {
             <div
                 ref={setNodeRef}
                 style={style}
-                className="opacity-30 h-24 rounded-xl border-2 border-crm-secondary border-dashed bg-slate-50"
+                className="opacity-40 h-24 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm"
             />
         );
     }
 
     return (
-        <div
+        <motion.div
             ref={setNodeRef}
             style={style}
             {...attributes}
             {...listeners}
+            layoutId={String(deal.id)}
+            layout // Enable layout animations for smooth position changes
+            initial={isOverlay ? { scale: 1, rotate: 0 } : { scale: 1, rotate: 0 }}
+            animate={isOverlay ? {
+                scale: 1.03, // Levitation effect
+                rotate: 2,
+                boxShadow: "0 25px 50px -12px rgb(0 0 0 / 0.25)" // shadow-2xl equivalent
+            } : {
+                scale: 1,
+                rotate: 0,
+                boxShadow: "none"
+            }}
+            whileHover={{ scale: 1.01, boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+            transition={{
+                type: 'spring',
+                stiffness: 400,
+                damping: 30
+            }}
             className={cn(
-                "bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group relative",
-                isOverlay && "shadow-xl rotate-2 scale-105 cursor-grabbing z-50 ring-2 ring-crm-secondary border-transparent"
+                "glass-card p-4 rounded-xl group relative cursor-grab active:cursor-grabbing mb-3",
+                isOverlay && "cursor-grabbing z-50 ring-1 ring-white/30 dark:ring-white/10"
             )}
         >
             <div className="flex justify-between items-start mb-2">
                 <span className={cn(
-                    "text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border",
+                    "text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border backdrop-blur-md",
                     priorityColors[deal.priority]
                 )}>
                     {deal.priority === 'high' ? 'Alta' : deal.priority === 'medium' ? 'Média' : 'Baixa'}
                 </span>
-                <span className="text-xs font-mono text-slate-400">#{deal.id}</span>
+                <span className="text-xs font-mono text-slate-400 dark:text-slate-500">#{deal.id}</span>
             </div>
 
-            <h4 className="font-semibold text-slate-800 dark:text-white mb-1 group-hover:text-crm-secondary transition-colors line-clamp-2">
+            <h4 className="font-semibold mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors line-clamp-2">
                 {deal.name}
             </h4>
 
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-200/50 dark:border-white/10">
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(deal.value)}
                 </p>
             </div>
-        </div>
+        </motion.div>
     );
 };
