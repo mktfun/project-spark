@@ -17,6 +17,7 @@ import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
 import { KanbanColumn } from './KanbanColumn';
 import { KanbanCard, Deal } from './KanbanCard';
 import { Loader2, Plus } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { fetchStages, fetchLeads, updateLeadStatus } from '@/lib/api';
 import { StageDialog } from './StageDialog';
 
