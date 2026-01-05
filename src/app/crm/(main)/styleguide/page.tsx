@@ -53,7 +53,7 @@ export default function StyleguidePage() {
                 <div className="grid md:grid-cols-2 gap-6">
                     <Card className="space-y-4">
                         <h3 className="font-medium text-slate-900">Estados Normais</h3>
-                        <Input placeholder="Ex: João da Silva" label="Nome do Segurado" />
+                        <Input placeholder="Ex: Corretora de Seguros" label="Nome do Segurado" />
                         <Input placeholder="email@exemplo.com" label="E-mail" />
                         <Input placeholder="Digite algo..." />
                     </Card>
