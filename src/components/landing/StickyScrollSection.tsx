@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
-import { Check, Zap, Smartphone, MoreVertical, Phone, Video } from 'lucide-react';
+import { Check, Zap, Smartphone, MoreVertical, Phone, Video, Building2 } from 'lucide-react';
 
 const steps = [
     {
@@ -185,11 +185,11 @@ function IPhoneMockupLight({ messages, visibleCount, isTyping, isMobile = false 
                             <div className="text-blue-500 -ml-1">
                                 <span className="text-2xl">‹</span>
                             </div>
-                            <div className="w-9 h-9 rounded-full bg-zinc-200 flex items-center justify-center text-zinc-500 font-semibold text-sm border border-black/5">
-                                JS
+                            <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white border border-black/5">
+                                <Building2 size={16} />
                             </div>
                             <div className="flex-1">
-                                <div className="text-black font-semibold text-sm">João da Silva</div>
+                                <div className="text-black font-semibold text-sm">Corretora de Seguros</div>
                                 <div className="text-zinc-400 text-xs">Online</div>
                             </div>
                             <div className="flex gap-4 text-blue-500">
