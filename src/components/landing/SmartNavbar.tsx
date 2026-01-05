@@ -39,11 +39,11 @@ export function SmartNavbar() {
                         width: scrolled ? (typeof window !== 'undefined' && window.innerWidth < 1024 ? "92%" : 620) : "92%",
                         height: scrolled ? 64 : 80,
                         borderRadius: scrolled ? "9999px" : "16px",
-                        // VOLTA PARA O VISUAL ROBUSTO E LEGÍVEL (Sem Liquid Glass experimental)
-                        backgroundColor: scrolled ? "rgba(2, 6, 23, 0.90)" : "rgba(0,0,0,0)",
-                        borderColor: scrolled ? "rgba(255, 255, 255, 0.08)" : "rgba(255,255,255,0)",
-                        backdropFilter: scrolled ? "blur(20px)" : "blur(0px)",
-                        boxShadow: scrolled ? "0 20px 40px -10px rgba(0, 0, 0, 0.5)" : "none",
+                        // LIQUID GLASS EFFECT
+                        backgroundColor: scrolled ? "rgba(15, 23, 42, 0.65)" : "rgba(0,0,0,0)",
+                        borderColor: scrolled ? "rgba(255, 255, 255, 0.12)" : "rgba(255,255,255,0)",
+                        backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "blur(0px)",
+                        boxShadow: scrolled ? "0 20px 40px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.05)" : "none",
                     }}
                     transition={{ duration: 0.6, ease: iosEase }}
                     style={{ maxWidth: "1400px" }}
@@ -87,15 +87,9 @@ export function SmartNavbar() {
 
                         {/* Direita */}
                         <div className="flex items-center justify-end gap-3">
-                            <a
-                                href="https://crm.davicode.me/login"
-                                className="text-sm font-semibold text-white/70 hover:text-white transition-colors mr-2"
-                            >
-                                Acessar Sistema
-                            </a>
                             <motion.a
                                 layout="position"
-                                href="https://crm.davicode.me/login"
+                                href="https://crm.tork.services/auth"
                                 className={`flex items-center justify-center text-sm font-bold rounded-full transition-all whitespace-nowrap
                     ${scrolled ? "bg-white text-slate-950 px-6 py-2.5 hover:bg-zinc-200" : "bg-white/10 text-white px-7 py-3 hover:bg-white/20 border border-white/10"}`}
                             >
@@ -149,7 +143,7 @@ export function SmartNavbar() {
                             ))}
                             <hr className="border-white/10 my-8 w-1/2 mx-auto" />
                             {/* <a href="/login" className="text-xl text-zinc-400 font-medium">Login</a> */}
-                            <a href="https://crm.davicode.me/login" onClick={() => setMobileMenuOpen(false)} className="w-full py-4 bg-white text-slate-950 rounded-2xl font-bold text-xl mt-4 shadow-xl shadow-cyan-500/10">
+                            <a href="https://crm.tork.services/auth" onClick={() => setMobileMenuOpen(false)} className="w-full py-4 bg-white text-slate-950 rounded-2xl font-bold text-xl mt-4 shadow-xl shadow-cyan-500/10">
                                 Começar Agora
                             </a>
                         </div>
